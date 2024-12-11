@@ -1,0 +1,52 @@
+#This script identifies the data types of csv files in a directory, and creates and excel file with all the column headers and the data types. Make sure you change your file paths!
+# Load required libraries
+library(readr)       # For reading CSV files
+library(dplyr)       # For data manipulation
+library(purrr)       # For functional programming
+library(openxlsx)    # For saving to Excel
+
+# Set the directory path
+directory <- "C:\\Users\\tones\\Downloads\\Data_Processing\\processed"
+
+# Get a list of CSV files in the directory and exclude temporary files
+files <- list.files(directory, full.names = TRUE, pattern = "\\.csv$")
+files <- files[!grepl("^~\\$", basename(files))]  # Exclude files starting with '~$'
+
+# Initialize an empty list to store the results
+structures <- list()
+
+# Loop through each CSV file
+for (file in files) {
+  # Read the CSV file
+  data <- read_csv(file, show_col_types = FALSE)
+  
+  # Get the structure of the file
+  struct <- tibble(
+    FileName = basename(file),
+    ColumnName = names(data),
+    DataType = sapply(data, function(x) {
+      # Convert complex types like lists to a simple character
+      dtype <- class(x)
+      if ("list" %in% dtype) {
+        return("list")
+      } else {
+        return(dtype[1])
+      }
+    })
+  )
+  
+  # Append the structure to the list
+  structures[[file]] <- struct
+}
+
+# Combine all structures into a single data frame
+final_structure <- bind_rows(structures, .id = "FilePath")
+
+# Save the output to an Excel file
+output_file <- "C:\\Users\\tones\\Downloads\\Data_Processing\\processed\\File_Structures.xlsx"
+openxlsx::write.xlsx(final_structure, output_file)
+
+
+
+# Message to indicate completion
+cat("File structures saved to Excel and CSV!")
